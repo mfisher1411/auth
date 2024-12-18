@@ -1,0 +1,22 @@
+version: '3'
+
+volumes:
+  postgres_volume_auth:
+
+services:
+  pg-auth:
+    image: postgres:17.2-alpine3.21
+    env_file:
+      - auth.env
+    ports:
+      - 54323:5432 #внешний порт:внутренний порт (постгрес подмается внутри контейнера на порут 5432)
+    volumes:
+      - postgres_volume_auth:/var/lib/postgresql/data
+
+  migrator-auth:
+    build:
+      context: .
+      dockerfile: migration_auth.Dockerfile
+    restart: on-failure
+    environment:
+      DB_HOST: pg-auth              
