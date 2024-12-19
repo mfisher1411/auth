@@ -3,17 +3,28 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
+	"net"
 	"time"
+
+	desc "github.com/mfisher1411/auth/pkg/user_v1"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 const (
-	dbDSN = "host=localhost port=54323 dbname=auth user=auth-user password=auth-password sslmode=disable"
+	dbDSN    = "host=localhost port=54323 dbname=auth user=auth-user password=auth-password sslmode=disable"
+	grpcPort = 50053
 )
+
+type server struct {
+	desc.UnimplementedNoteV1Server
+}
 
 func main() {
 	ctx := context.Background()
@@ -108,5 +119,20 @@ func main() {
 	}
 
 	log.Printf("id: %d, name: %s, body: %s, created_at: %v, updated_at: %v", id, name, body, createdAt, updatedAt)
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", grpcPort))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	s := grpc.NewServer()
+	reflection.Register(s)
+	desc.RegisterNoteV1Server(s, &server{})
+
+	log.Printf("server listening at %v", lis.Addr())
+
+	if err = s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 
 }
