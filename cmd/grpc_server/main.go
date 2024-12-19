@@ -23,7 +23,7 @@ const (
 )
 
 type server struct {
-	desc.UnimplementedNoteV1Server
+	desc.UnimplementedUserV1Server
 }
 
 func main() {
@@ -127,7 +127,7 @@ func main() {
 
 	s := grpc.NewServer()
 	reflection.Register(s)
-	desc.RegisterNoteV1Server(s, &server{})
+	desc.RegisterUserV1Server(s, &server{})
 
 	log.Printf("server listening at %v", lis.Addr())
 
