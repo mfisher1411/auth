@@ -9,7 +9,9 @@ on:
 env:
   REGISTRY: "cr.selcloud.ru/mfisher1411"
   IMAGE_NAME: "auth-server"
-  CONTAINER_NAME: "auth-server-container"    
+  CONTAINER_NAME: "auth-server-container"
+  IMAGE_POSTGRES_NAME: "auth-postgres"
+  CONTAINER_POSTGRES_NAME: "auth-postgres-container"    
 
 jobs:
   build-and-test:
@@ -135,7 +137,7 @@ jobs:
         run: |
           TAG_NAME=$(echo $GITHUB_SHA | head -c7)
           docker buildx create --use
-          docker buildx build --no-cache --push --tag $REGISTRY/$IMAGE_NAME:$TAG_NAME -f ./migration_auth.Dockerfile .
+          docker buildx build --no-cache --push --tag $REGISTRY/$IMAGE_POSTGRES_NAME:$TAG_NAME -f ./migration_auth.Dockerfile .
 
   deploy-image-postgres:
     runs-on: ubuntu-latest
@@ -148,7 +150,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSHKEY }}
-          envs: IMAGE_NAME,REGISTRY,GITHUB_SHA,CONTAINER_NAME
+          envs: IMAGE_POSTGRES_NAME,REGISTRY,GITHUB_SHA,CONTAINER_POSTGRES_NAME
           script: |
             # Set up variables
             TAG_NAME=$(echo $GITHUB_SHA | head -c7)
@@ -157,11 +159,11 @@ jobs:
             docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
             
             # Stop running container
-            docker stop $CONTAINER_NAME
+            docker stop $CONTAINER_POSTGRES_NAME
             
             # Remove old container
-            docker rm $CONTAINER_NAME
+            docker rm $CONTAINER_POSTGRES_NAME
             
             # Run a new container from a new image
-            docker run -d -p 54323:54323 --name $CONTAINER_NAME -t $REGISTRY/$IMAGE_NAME:$TAG_NAME        
+            docker run -d -p 54323:54323 --name $CONTAINER_POSTGRES_NAME -t $REGISTRY/$IMAGE_POSTGRES_NAME:$TAG_NAME        
           
